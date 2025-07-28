@@ -3,11 +3,15 @@
 #include <time.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
-#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_font.h> 
+/* Libraries:
+   - Standard I/O, random and time for game logic
+   - Allegro for graphics, primitives, and font rendering */
 
 #define NUM_LINHAS 4
 #define NUM_COLUNAS 6
 #define ESPACO_X 30
+/* Constants defining grid layout of aliens */
 
 const int SCREEN_W = 960;
 const int SCREEN_H = 540;
@@ -17,6 +21,7 @@ const int NAVE_H = 50;
 const int ALIEN_W = 60;
 const int ALIEN_H = 32;
 const float FPS = 60.0;
+/* Game configuration constants: screen size, object dimensions, and frame rate */
 
 typedef struct Nave {
     float x;
@@ -24,6 +29,11 @@ typedef struct Nave {
     int dir, esq;
     ALLEGRO_COLOR cor;
 } Nave;
+/* Player spaceship:
+   - x: horizontal position
+   - vel: movement speed
+   - dir, esq: directional flags (right/left)
+   - cor: ship color */
 
 typedef struct Alien {
     float x, y;
@@ -31,12 +41,21 @@ typedef struct Alien {
     int vivo;
     ALLEGRO_COLOR cor;
 } Alien;
+/* Alien entity:
+   - x, y: position
+   - x_vel, y_vel: movement velocity
+   - vivo: alive flag (1=alive, 0=dead)
+   - cor: color */
 
 typedef struct Tiro {
     float x, y;
     float vel;
     int ativo;
 } Tiro;
+/* Bullet (shot):
+   - x, y: position
+   - vel: speed
+   - ativo: active flag (1=on screen, 0=inactive) */
 
 int carregarRecorde() {
     FILE *f = fopen("recorde.txt", "r");
@@ -45,14 +64,14 @@ int carregarRecorde() {
     fscanf(f, "%d", &r);
     fclose(f);
     return r;
-}
+} /* Loads the saved high score from a text file (returns 0 if no file exists) */
 
 void salvarRecorde(int r) {
     FILE *f = fopen("recorde.txt", "w");
     if (f == NULL) return;
     fprintf(f, "%d", r);
     fclose(f);
-}
+} /* Saves the new high score to a text file */
 
 void initNave(Nave *n){
     n->x = SCREEN_W / 2;
@@ -60,7 +79,7 @@ void initNave(Nave *n){
     n->dir = 0;
     n->esq = 0;
     n->cor = al_map_rgb(0, 0, 255);
-}
+} /* Initializes the spaceship in the center with default speed and blue color */
 
 void initAliens(Alien a[NUM_LINHAS][NUM_COLUNAS]){
     for(int i=0;i<NUM_LINHAS;i++){
@@ -73,7 +92,7 @@ void initAliens(Alien a[NUM_LINHAS][NUM_COLUNAS]){
             a[i][j].cor = al_map_rgb(rand()%256, rand()%256, rand()%256);
         }
     }
-}
+} /* Initializes aliens in a grid with random colors and default velocities */
 
 int colisao_alien_nave(Alien a, Nave *n){
     float topo = SCREEN_H - GRASS_H - NAVE_H;
@@ -84,13 +103,13 @@ int colisao_alien_nave(Alien a, Nave *n){
     if (!a.vivo) return 0;
 
     return !(a.x + ALIEN_W < esq || a.x > dir || a.y + ALIEN_H < topo || a.y > base);
-}
+} /* Checks collision between an alien and the spaceship (returns 1 if colliding) */
 
 void draw_alien(Alien a){
     if(a.vivo){
         al_draw_filled_rectangle(a.x, a.y, a.x+ALIEN_W, a.y+ALIEN_H, a.cor);
     }
-}
+} /* Draws an alien only if it is alive */
 
 void updateAliens(Alien a[NUM_LINHAS][NUM_COLUNAS]){
     int inv = 0;
@@ -118,16 +137,16 @@ void updateAliens(Alien a[NUM_LINHAS][NUM_COLUNAS]){
             }
         }
     }
-}
+} /* Updates alien positions, reversing direction and moving down when hitting screen edges */
 
 int colisao_alien_solo(Alien a){
     return a.vivo && (a.y + ALIEN_H > SCREEN_H - GRASS_H);
-}
+} /* Checks if an alien reached the ground (returns 1 if true) */
 
 void draw_scenario(){
     al_clear_to_color(al_map_rgb(0,0,0));
     al_draw_filled_rectangle(0, SCREEN_H - GRASS_H, SCREEN_W, SCREEN_H, al_map_rgb(0,245,0));
-}
+} /* Clears the screen and draws the ground */
 
 void draw_nave(Nave *n){
     float yb = SCREEN_H - GRASS_H/2;
@@ -135,7 +154,7 @@ void draw_nave(Nave *n){
                             n->x - NAVE_W/2, yb,
                             n->x + NAVE_W/2, yb,
                             n->cor);
-}
+} /* Draws the spaceship as a triangle */
 
 void update_nave(Nave *n){
     if(n->dir && n->x + n->vel <= SCREEN_W){
@@ -144,20 +163,20 @@ void update_nave(Nave *n){
     if(n->esq && n->x - n->vel >= 0){
         n->x -= n->vel;
     }
-}
+} /* Updates spaceship position based on directional flags */
 
 void init_tiro(Tiro *t){
     t->x = 0;
     t->y = 0;
     t->vel = 5;
     t->ativo = 0;
-}
+} /* Initializes the bullet as inactive */
 
 void draw_tiro(Tiro t){
     if(t.ativo){
         al_draw_filled_circle(t.x, t.y, 5, al_map_rgb(255,255,255));
     }
-}
+} /* Draws the bullet if active */
 
 void update_tiro(Tiro *t){
     if(t->ativo){
@@ -166,7 +185,7 @@ void update_tiro(Tiro *t){
             t->ativo = 0;
         }
     }
-}
+} /* Updates bullet movement upward, deactivating it when it leaves the screen */
 
 int colidiu(Alien a, Tiro t){
     if(!a.vivo || !t.ativo) return 0;
@@ -174,11 +193,11 @@ int colidiu(Alien a, Tiro t){
         return 1;
     }
     return 0;
-}
+} /* Checks collision between a bullet and an alien (returns 1 if hit) */
 
 int main(){
 
-    srand(time(NULL));
+    srand(time(NULL)); /* Initializes random seed for alien colors */
 
     ALLEGRO_DISPLAY *display = NULL;
     ALLEGRO_EVENT_QUEUE *event_queue = NULL;
@@ -205,6 +224,7 @@ int main(){
     al_register_event_source(event_queue, al_get_keyboard_event_source());
     al_register_event_source(event_queue, al_get_mouse_event_source());
     al_register_event_source(event_queue, al_get_timer_event_source(timer));
+    /* Allegro initialization: display, timer, input devices, and event queue */
 
     Nave nave;
     initNave(&nave);
@@ -220,7 +240,7 @@ int main(){
     int playing = 1;
     int venceu = 0;
 
-    al_start_timer(timer);
+    al_start_timer(timer); /* Starts the game loop timer */
 
     while(playing){
         ALLEGRO_EVENT ev;
@@ -243,7 +263,7 @@ int main(){
 
                     if(colisao_alien_solo(*a)){
                         playing = 0;
-                        printf("\nUm alien chegou ao chão. Fim de jogo!\n");
+                        printf("\nUm alien chegou ao chÃ£o. Fim de jogo!\n");
                     }
 
                     if(colisao_alien_nave(*a, &nave)){
@@ -276,7 +296,7 @@ int main(){
             if (todos_mortos) {
                 playing = 0;
                 venceu = 1;
-                printf("\nTodos os aliens foram destruídos! Você venceu!\n");
+                printf("\nTodos os aliens foram destruÃ­dos! VocÃª venceu!\n");
             }
 
             draw_nave(&nave);
@@ -324,7 +344,7 @@ int main(){
     if (venceu) {
         al_draw_textf(al_create_builtin_font(), al_map_rgb(0, 255, 0),
                       SCREEN_W/2, SCREEN_H/2 - 20, ALLEGRO_ALIGN_CENTER,
-                      "VOCÊ VENCEU! Pontos: %d", pontos);
+                      "VOCÃŠ VENCEU! Pontos: %d", pontos);
     } else {
         al_draw_textf(al_create_builtin_font(), al_map_rgb(255, 255, 255),
                       SCREEN_W/2, SCREEN_H/2 - 20, ALLEGRO_ALIGN_CENTER,
@@ -336,6 +356,7 @@ int main(){
                   "Recorde: %d", recorde);
     al_flip_display();
     al_rest(3.0);
+    /* Final game screen: displays win/lose message and waits 3 seconds */
 
     al_destroy_timer(timer);
     al_destroy_display(display);
@@ -343,5 +364,4 @@ int main(){
     system("pause");
 
     return 0;
-}
-
+} /* Main game loop: initializes Allegro, runs the game, handles events, and displays end screen */
